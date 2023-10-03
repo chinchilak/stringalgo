@@ -1,10 +1,91 @@
 import csv
 
-def generate_series(start, num_series):
+def increment_prefix(prefix):
+    try:
+        last_char = prefix[-1]
+        if last_char == 'Z':
+            return increment_prefix(prefix[:-1]) + 'A'
+        else:
+            return prefix[:-1] + chr(ord(last_char) + 1)
+    except:
+        return None
+
+def increment_mixed_series(id_start:str, batch_size:int, keep_first:bool=False) -> list:
     series = []
-    
-    for _ in range(num_series):
-        current = list(start)
+    id = id_start
+    for _ in range(batch_size):
+        prefix = ""
+        numeric = ""
+        for char in id:
+            if char.isalpha():
+                prefix += char
+            elif char.isdigit():
+                numeric += char
+            else:
+                break
+        if numeric:
+            max_numeric_val = int('9' * len(numeric))
+            current_numeric_val = int(numeric)
+            if current_numeric_val < max_numeric_val:
+                new_prefix = prefix
+                new_numeric = str(current_numeric_val + 1).zfill(len(numeric))
+            else:
+                new_prefix = increment_prefix(prefix)
+                if new_prefix is not None:
+                    new_numeric = '0' * len(numeric)
+                else:
+                    print("End of possible mixed series reached!")
+                    break
+            id = new_prefix + new_numeric
+        else:
+            id = increment_prefix(id)
+            if id is not None:
+                series.append(id)
+            else:
+                print("End of possible mixed series reached!")
+                break
+        series.append(id)
+
+    if keep_first:
+        series.insert(0, id_start)
+
+    return series
+
+
+print(increment_mixed_series("ZZ9995", 5, False))
+
+
+def generate_incremental_series(starting_number, batch_size):
+    series = []
+    for i in range(starting_number, starting_number + batch_size):
+        series.append(i)
+    return series
+
+def split_mixed_string(input_string:str) -> (str, str):
+    prefix = ""
+    numeric_part = ""
+
+    for char in input_string:
+        if char.isalpha():
+            prefix += char
+        elif char.isdigit():
+            numeric_part += char
+        else:
+            break
+    return prefix, numeric_part
+
+def calculate_max_number(length):
+    return 10**length - 1
+
+
+
+# print(increment_prefix("AA"))
+
+
+def generate_series_with_chars(starting_number, batch_size):
+    series = []
+    for _ in range(batch_size):
+        current = list(starting_number)
         series.append("".join(current))
         
         i = len(current) - 1
@@ -18,14 +99,12 @@ def generate_series(start, num_series):
             else:
                 current[i] = chr(ord(current[i]) + 1)
                 break
-        
-        start = "".join(current)
-    
+        starting_number = "".join(current)
     return series
 
 # start = "012345"
 # num_series = 10000
-# result = generate_series(start, num_series)
+# result = generate_series(starting_number, batch_size)
 
 def save_to_csv(series, filename):
     with open(filename, "w", newline="") as csvfile:
@@ -114,8 +193,8 @@ def create_table_from_csv(database_filename, csv_filename, table_name="new_table
     conn.close()
     print(f"Table '{table_name}' created and data inserted into the database.")
 
-csv_filename = "batch_output.csv"
-database_filename = "my_database.db"
+# csv_filename = "batch_output.csv"
+# database_filename = "my_database.db"
 
-create_table_from_csv(database_filename, csv_filename)
+# create_table_from_csv(database_filename, csv_filename)
 
